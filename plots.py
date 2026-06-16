@@ -24,4 +24,4 @@ def plot_curves(curve: PlotCurve):
     plt.legend()
     os.makedirs(os.path.dirname(curve.save_address) or ".", exist_ok=True)
     plt.savefig(curve.save_address)
-    plt.show()
+    plt.close()

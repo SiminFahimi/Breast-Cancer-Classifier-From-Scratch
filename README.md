@@ -1,187 +1,103 @@
-# Neural Network from Scratch (NumPy)
-
-A fully connected feedforward neural network implemented entirely with **Python + NumPy**, without using deep learning frameworks such as PyTorch or TensorFlow.
-
-This project was developed to understand the internal mechanics of neural networks by manually implementing forward propagation, backpropagation, optimization, regularization, and model evaluation from first principles.
-
+Neural Network from Scratch (NumPy)
+A fully connected feedforward neural network built entirely with Python + NumPy, without relying on deep learning frameworks like PyTorch or TensorFlow.
+The goal of this project is to deeply understand how neural networks work internally — by hand-coding forward propagation, backpropagation, gradient checking, regularization, and hyperparameter tuning from first principles.
 ---
-
-## Highlights
-
-- Neural network implemented entirely from scratch
-- Forward propagation
-- Backpropagation
-- Mini-batch gradient descent
-- Binary cross-entropy loss
-- L2 regularization
-- He / Xavier weight initialization
-- Gradient checking via finite differences
-- K-fold cross-validation
-- Hyperparameter tuning experiments
-- Visualization of training behavior and decision boundaries
-
+Features
+Pure NumPy implementation — no ML frameworks
+Forward propagation & backpropagation
+Mini-batch gradient descent
+Binary cross-entropy loss
+L2 regularization (weight decay)
+He initialization (hidden layers) + Xavier initialization (output layer)
+Numerical gradient checking via finite differences
+K-fold cross-validation
+Automated hyperparameter search (learning rate & λ)
+Feature engineering (polynomial + Pearson-based selection)
+Training curve, lambda effect, and dataset size visualizations
 ---
-
-## Model Architecture
-
-Example network:
-
-Input Layer  
-→ Hidden Layer (ReLU)  
-→ Hidden Layer (ReLU)  
-→ Output Layer (Sigmoid)
-
-The implementation supports configurable:
-
-- Number of layers
-- Hidden units
-- Activation functions
-- Learning rate
-- Regularization strength
-- Batch size
-
----
-
-## Dataset Generation
-
-A synthetic 3D binary classification dataset was constructed to create a nonlinear and controllable decision boundary.
-
-First, two input variables were sampled uniformly:
-
-- x ~ Uniform(-10, 10)
-- y ~ Uniform(-10, 10)
-
-A nonlinear surface was then defined using a custom function:
-
-z = f(x, y)
-
-To generate class separation, each sample was assigned a binary label:
-
-- Class 1: points above the surface  
-- Class 0: points below the surface  
-
-This was implemented by introducing a random vertical offset around the surface:
-
-z = f(x, y) + offset   if label = 1  
-z = f(x, y) - offset   if label = 0
-
-where:
-
-- offset ~ Uniform(1.0, 3.0)
-
-Finally, each data point is represented as:
-
-X = [x, y, z]
-
-This construction ensures a **non-linearly separable 3D classification problem**, requiring the model to learn complex decision boundaries rather than simple linear separation.
----
-## Gradient Checking
-
-To verify the correctness of the backpropagation implementation, numerical gradient checking was performed using finite differences:
-
-$$
-\frac{\partial J}{\partial \theta}
-\approx
-\frac{J(\theta+\epsilon)-J(\theta-\epsilon)}{2\epsilon}
-$$
-
-The analytical gradients from backpropagation were compared against numerical estimates, confirming implementation correctness within a small tolerance.
----
-
-## Feature Engineering
-
-To enhance non-linear representation, the following features were engineered:
-- x²
-- y²
-- sin(x)
-- cos(y)
-These produced small but consistent performance gains.
----
-
-## Results
-
-### Raw vs Engineered Features
-
-| Input Type          | Accuracy |
-|--------------------|----------|
-| Raw Features       | 0.9587   |
-| Engineered Features| 0.9663   |
-
-The performance gain was small but consistent.
-
-## Training Curve
-![cost each epoch](results/loss.png)
-...
-
-## Effect of size
-![accuracy vs size](results/size_effect_on_accuracy.png)
-...
-
-![effect of increasing size](results/size_effect_on_cost.png)
-...
-
-## Lambda comparison
-![Lamba comparison](results/lambda_effect.png)
-...
-
-## Learning rate comparison
-![lr comparison](results/lr_effect.png)
-...
-
-## 3D Predictions
-![Predictions](results/prediction_3d.png)
-
----
-
-## Experiments Conducted
-
-- Hyperparameter tuning  
-- Learning rate comparison  
-- L2 regularization analysis  
-- Dataset size impact  
-- Learning curves  
-- 3D decision boundary visualization  
-
----
-
-## Project Structure
+Project Structure
 ```
 .
-├── model.py # Neural network implementation
-├── train.py # Training pipeline
-├── evaluate.py # Model evaluation
-├── plots.py # Visualization utilities
-├── data.py # Synthetic dataset generation
+├── main.py              # Entry point — runs full pipeline
+├── model.py             # FeedforwardNeuralNetwork class (forward, backward, fit)
+├── build_network.py     # Factory function to construct the model
+├── data.py              # Data loading, splitting, normalization, feature engineering
+├── eval.py              # Cross-validation, hyperparameter search, experiment runners
+├── plots.py             # Plotting utilities (matplotlib wrappers)
+├── utils.py             # Activation functions: ReLU, Sigmoid and their derivatives
 ├── results/
-│ ├── loss.png
-│ ├── lr_effect.png
-│ ├── lambda_effect.png
-│ ├── size_effect_on_accuracy.png
-│ ├── size_effect_on_cost.png
-│ ├── prediction_3d.png
+│   ├── loss.png
+│   ├── lr_effect.png
+│   ├── lambda_effect.png
+│   ├── size_effect_on_accuracy.png
+│   └── size_effect_on_cost.png
 └── README.md
 ```
 ---
-
-## Implementation Notes
-
-- Implemented using NumPy only
-- No external machine learning libraries used
-- Focused on correctness, clarity, and learning fundamentals
-
+Dataset
+Uses the Breast Cancer Wisconsin (Original) dataset fetched via `ucimlrepo` (UCI ID: 15).
+Binary classification: malignant (1) vs. benign (0)
+Missing values imputed with column medians
+ID column (`Sample_code_number`) removed before training
+80/20 train-test split
 ---
-
-## Possible Extensions
-
-- Adam optimizer
-- RMSProp optimizer
-- Deeper neural networks
-- Multi-class classification
-- PyTorch reimplementation for benchmarking
-- Automated feature selection
-
+Model Architecture
+```
+Input Layer  (n features)
+→ Hidden Layer 1 — 16 units, ReLU
+→ Hidden Layer 2 —  8 units, ReLU
+→ Output Layer  —  1 unit,  Sigmoid
+```
+All layer sizes, activation functions, and regularization strength are configurable via `build_network.py` and `Config`.
 ---
+Feature Engineering
+Two engineered features are optionally added based on Pearson correlation with the target:
+The top-2 most correlated features are selected
+Their squared values (x²) are appended to the input
+Input Type	Test Accuracy
+Raw features	0.9587
+Engineered features	0.9663
+The gain is consistent, though modest.
+---
+Gradient Checking
+Backpropagation is verified using finite-difference approximation:
+$$\frac{\partial J}{\partial \theta} \approx \frac{J(\theta + \varepsilon) - J(\theta - \varepsilon)}{2\varepsilon}$$
+Checked at 10 random parameter positions per layer on the first epoch. Enable via `debug=True` in `model.fit(...)`.
+---
+Hyperparameter Tuning
+The pipeline searches over:
+Learning rates: `(0.005, 0.01, 0.02, 0.05, 0.1, 0.5)`
+Lambda (L2 strength): `(0, 0.002, 0.005, ..., 10.24)`
+Selection is done via 3-fold cross-validation, minimizing validation cost.
+---
+Experiments & Results
+Training Curve
+![Training Cost per Epoch](results/loss.png)
+Effect of Dataset Size on Cost
+![Size Effect on Cost](results/size_effect_on_cost.png)
+Effect of Dataset Size on Accuracy
+![Size Effect on Accuracy](results/size_effect_on_accuracy.png)
+Lambda (Regularization) Comparison
+![Lambda Effect](results/lambda_effect.png)
+---
+Installation & Usage
+```bash
+# Install dependencies
+pip install -r requirements.txt
 
-## Summary
-
-This project demonstrates both mathematical understanding and engineering ability by implementing a neural network system entirely from scratch using NumPy, including optimization, regularization, verification, and structured experimentation.
+# Run the full pipeline
+python main.py
+```
+---
+Possible Extensions
+Adam / RMSProp optimizers
+Multi-class classification (softmax output)
+Dropout regularization
+Early stopping
+PyTorch reimplementation for benchmarking
+Automated feature selection beyond Pearson correlation
+---
+Notes
+Implemented with NumPy only — focused on correctness and clarity
+Bias units are prepended inside the forward pass (not stored separately)
+L2 regularization excludes bias weights, as is standard practice

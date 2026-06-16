@@ -31,7 +31,7 @@ def global_split(X, y, test_ratio=0.2):
  
 # FEATURE SELECTION (FIXED)
 
-def select_top_features(X, y, k=2):
+def select_top_features(X, y, k=3):
     scores = []
     for f in range(X.shape[1]):
         col = X[:, f]
@@ -58,7 +58,7 @@ def prep_dataset(X_train_full, y_train_full, X_test, y_test, n_sample, add_feat=
     X_train, y_train = sample_dataset(X_train_full, y_train_full, n_sample)
 
     if add_feat:
-        features = select_top_features(X_train, y_train, k=2)
+        features = select_top_features(X_train, y_train)
         X_train = build_features(X_train, features)
         X_test = build_features(X_test, features)
 

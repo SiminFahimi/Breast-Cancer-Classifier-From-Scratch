@@ -47,40 +47,6 @@ def cross_validation(x_train, y_train, fold_num, num_epochs, net_factory, lr, la
     return np.mean(fold_acc), np.mean(fold_cost)
 
 
-def lr_effect(dataset, learning_rates, fold_num, num_epochs, net_factory, lambda_, plot=False, seed=42):
-    x_train = dataset.X_train
-    y_train = dataset.Y_train
-
-    cv_costs = []
-    best_lr = None
-    best_cost = math.inf
-
-    for lr in learning_rates:
-        cv_acc, cv_cost = cross_validation(
-            x_train, y_train, fold_num, num_epochs, net_factory, lr, lambda_, seed=seed
-        )
-        cv_costs.append(cv_cost)
-
-        if not np.isnan(cv_cost) and cv_cost < best_cost:
-            best_cost = cv_cost
-            best_lr = lr
-
-    if best_lr is None:
-        best_lr = min(learning_rates)
-
-    if plot:
-        curves = PlotCurve(
-            data=[(learning_rates, cv_costs)],
-            x_label="Learning Rate",
-            y_label="Cost",
-            line_label=["CV Cost"],
-            title="Learning Rates Comparison",
-            save_address="results/lr_effect.png",
-        )
-        plot_curves(curves)
-    return best_lr
-
-
 def lambda_effect(dataset, fold_num, num_epochs, net_factory, lr, lambdas, plot=True, seed=42):
     x_train = dataset.X_train
     y_train = dataset.Y_train
