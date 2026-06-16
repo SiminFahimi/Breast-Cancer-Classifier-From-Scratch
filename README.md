@@ -23,6 +23,7 @@ This project is designed to provide a deep, hands-on understanding of neural net
 ---
 
 ## Project Structure
+'''
 .
 ├── main.py # Entry point — runs full pipeline
 ├── model.py # Neural network implementation (forward, backward, training)
@@ -39,7 +40,7 @@ This project is designed to provide a deep, hands-on understanding of neural net
 │ └── size_effect_on_cost.png
 └── README.md
 
-text
+'''
 
 ---
 
