@@ -1,10 +1,9 @@
 import numpy as np
 import copy
-
+import math
 class FeedforwardNeuralNetwork:
     def __init__(
         self,
-        num_layers,
         num_features,
         num_hidden_units: list,
         num_classes,
@@ -14,7 +13,7 @@ class FeedforwardNeuralNetwork:
     ):
         self.activation_func = activation_func
         self.activation_func_prime = activation_func_prime
-        self.num_layers = num_layers
+        self.num_layers = len(num_hidden_units) + 2
 
         self.num_features = num_features
         self.num_hidden_units = num_hidden_units
@@ -95,7 +94,7 @@ class FeedforwardNeuralNetwork:
         regularization = (lambda_ / (2 * m)) * regularization
         return regularization
 
-    def binary_cross_entropy_loss(self, h_theta, y_data, weights, regularize=True, lambda_=0):
+    def binary_cross_entropy_loss(self, h_theta, y_data, weights, regularize=True, lambda_=None):
         m = y_data.shape[0]
 
         eps = 1e-12
@@ -108,7 +107,7 @@ class FeedforwardNeuralNetwork:
 
         return cost
 
-    def backpropagation(self, y_data, activations, z_list, weights, lambda_=0):
+    def backpropagation(self, y_data, activations, z_list, weights, lambda_):
         g_prime = self.activation_func_prime
         num_layers = self.num_layers
 
@@ -133,7 +132,7 @@ class FeedforwardNeuralNetwork:
 
         return gradients
 
-    def gradient_check(self, x_data, y_data, gradients, weights):
+    def gradient_check(self, x_data, y_data, gradients, weights, lambda_):
         epsilon = 1e-5
 
         for layer_idx in range(len(weights)):
@@ -153,8 +152,8 @@ class FeedforwardNeuralNetwork:
                 h_minus, _ = self.forward_pass(x_data, theta_minus)
 
                 grad_approx = (
-                    self.binary_cross_entropy_loss(h_plus[-1], y_data, theta_plus)
-                    - self.binary_cross_entropy_loss(h_minus[-1], y_data, theta_minus)
+                    self.binary_cross_entropy_loss(h_plus[-1], y_data, theta_plus, lambda_=lambda_)
+                    - self.binary_cross_entropy_loss(h_minus[-1], y_data, theta_minus, lambda_=lambda_)
                 ) / (2 * epsilon)
 
                 diff = abs(grad_approx - gradients[layer_idx][i, j])
@@ -171,46 +170,36 @@ class FeedforwardNeuralNetwork:
 
         return weights
 
-    def fit(self, x_data, y_data, num_epoch, learning_rate, lambda_=0, batch_size = 32, debug=False):
-        num_batch = max(1, len(x_data) // batch_size)
+    def fit(self, x_data, y_data, num_epoch, learning_rate, lambda_, batch_size=64, debug=False):
+        num_batch = math.ceil(len(x_data) / batch_size)
         training_epochs_cost = []
 
         for epoch in range(num_epoch):
             idx = np.random.permutation(len(x_data))
-            x_data = x_data[idx]
-            y_data = y_data[idx]
+            x_shuf = x_data[idx]
+            y_shuf = y_data[idx]
 
-            x_batches = np.array_split(x_data, num_batch)
-            y_batches = np.array_split(y_data, num_batch)
-                
+            x_batches = np.array_split(x_shuf, num_batch)
+            y_batches = np.array_split(y_shuf, num_batch)
+
             for i in range(num_batch):
-
                 x_batch = x_batches[i]
                 y_batch = y_batches[i]
 
                 activations, z_list = self.forward_pass(x_batch, self.weights)
-
-                gradients = self.backpropagation(
-                    y_batch, activations, z_list, self.weights, lambda_
-                )
+                gradients = self.backpropagation(y_batch, activations, z_list, self.weights, lambda_)
 
                 if epoch == 0 and debug:
-                    flag = self.gradient_check(
-                        x_batch, y_batch, gradients, self.weights
-                    )
+                    flag = self.gradient_check(x_batch, y_batch, gradients, self.weights, lambda_)
                     if not flag:
                         raise RuntimeError
 
-                self.weights = self.update_weights(
-                    gradients, self.weights, learning_rate
-                )
+                self.weights = self.update_weights(gradients, self.weights, learning_rate)
 
             full_activations, _ = self.forward_pass(x_data, self.weights)
-
             cost = self.binary_cross_entropy_loss(
-                full_activations[-1], y_data, self.weights, True, lambda_
-            )
-
+    full_activations[-1], y_data, self.weights, regularize=False, lambda_=lambda_
+)
             training_epochs_cost.append(cost)
 
         return training_epochs_cost
@@ -218,4 +207,4 @@ class FeedforwardNeuralNetwork:
     def predict_classes(self, x_data):
         activations, _ = self.forward_pass(x_data, self.weights)
         self.output = (activations[-1] > 0.5).astype(int)
-        return self.output
+        return  self.output.reshape(-1)

@@ -21,17 +21,19 @@ def generate_3d_classification_raw_data(count, surface_func):
 
     surface = surface_func(x, y)
 
-    labels = np.random.randint(0, 2, (count, 1))
-    offset = np.random.uniform(1.0, 3.0, (count, 1))
+    offset = np.random.uniform(0.0, 1.0, (count, 1))
+    sign = np.random.choice([-1, 1], size=(count, 1))
 
-    z = np.where(labels == 1, surface + offset, surface - offset)
+    z = surface + sign * offset
+
+    z += np.random.normal(0, 0.6, size=z.shape)
+
+    labels = (z > surface).astype(int)
 
     X = np.hstack((x, y, z))
     return X, labels
 
-
 # SAMPLING / SPLIT
- 
 def sample_dataset(X, y, n):
     if n > len(X):
         raise ValueError("n_sample is larger than dataset size")
@@ -54,49 +56,57 @@ def gini_impurity(probs):
     return 1 - np.sum(np.square(probs))
 
 
-def select_top_splits(X, y, k=2):
-    """Find top-k best (feature, threshold) splits using weighted Gini."""
-    y = y.ravel()
-    n_samples, n_features = X.shape
+# def select_top_splits(X, y, k=2):
+#     """Find top-k best (feature, threshold) splits using weighted Gini."""
+#     y = y.ravel()
+#     n_samples, n_features = X.shape
 
-    candidates = []
+#     candidates = []
 
-    for f in range(n_features):
+#     for f in range(n_features):
+#         col = X[:, f]
+#         thresholds = np.unique(col)
+
+#         for t in thresholds:
+#             left = y[col < t]
+#             right = y[col >= t]
+
+#             if len(left) == 0 or len(right) == 0:
+#                 continue
+
+#             def gini(arr):
+#                 p1 = np.mean(arr == 1)
+#                 p0 = 1 - p1
+#                 return gini_impurity([p0, p1])
+
+#             weighted = (len(left)/n_samples) * gini(left) + (len(right)/n_samples) * gini(right)
+
+#             candidates.append((f, t, weighted))
+
+#     candidates.sort(key=lambda x: x[2])
+#     return candidates[:k]
+
+
+def select_top_features(X, y, k=1):
+    scores = []
+    for f in range(X.shape[1]):
         col = X[:, f]
-        thresholds = np.unique(col)
-
-        for t in thresholds:
-            left = y[col < t]
-            right = y[col >= t]
-
-            if len(left) == 0 or len(right) == 0:
-                continue
-
-            def gini(arr):
-                p1 = np.mean(arr == 1)
-                p0 = 1 - p1
-                return gini_impurity([p0, p1])
-
-            weighted = (len(left)/n_samples) * gini(left) + (len(right)/n_samples) * gini(right)
-
-            candidates.append((f, t, weighted))
-
-    candidates.sort(key=lambda x: x[2])
-    return candidates[:k]
+        corr = abs(pearson_correlation(col, y))
+        scores.append((f, corr))
+    
+    scores.sort(key=lambda x: x[1], reverse=True)
+    return scores[:k]
 
 
- 
 # FEATURE ENGINEERING (GENERIC)
  
 def build_features(X, selected_features: List[Tuple[int, float, float]]):
     """Create nonlinear features from selected indices."""
     out = [X]
 
-    for f, _, _ in selected_features:
+    for f, _ in selected_features:
         col = X[:, f]
         out.append(col ** 2)
-        out.append(np.sin(col))
-        out.append(np.cos(col))
 
     return np.column_stack(out)
 
@@ -105,7 +115,7 @@ def prep_dataset(X_train_full, y_train_full, X_test, y_test, n_sample, add_feat=
     X_train, y_train = sample_dataset(X_train_full, y_train_full, n_sample)
 
     if add_feat:
-        features = select_top_splits(X_train, y_train, k=2)
+        features = select_top_features(X_train, y_train, k=2)
         X_train = build_features(X_train, features)
         X_test = build_features(X_test, features)
 
